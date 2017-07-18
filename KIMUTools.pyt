@@ -174,7 +174,12 @@ def get_track_logs(config):
     # apply the total length to all track logs on a transect.
     for key in results:
         transect = results[key]['TRANSECT_ID']
-        results[key]['TRACK_LENGTH'] = total_length[transect]
+        track_length = 0
+        try:
+            track_length = total_length[transect]
+        except KeyError:
+            arcpy.AddWarning("Transect '{0}' has no total length".format(transect))
+        results[key]['TRACK_LENGTH'] = track_length
 
     return results
 
