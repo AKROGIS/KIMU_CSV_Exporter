@@ -32,7 +32,7 @@ class Toolbox(object):
 class ExportCSV(object):
     def __init__(self):
         self.label = "FGDB to CSV"
-        self.description = ("Creates CSV file compliant with KIMU Protocol version {} "
+        self.description = ("Creates CSV file having mm/dd/yyyy dates compliant with KIMU Protocol version {} "
                             "from a Park Observer Survey FGDB.".format(default_config['protocol']))
 
     def getParameterInfo(self):
@@ -95,7 +95,7 @@ def get_gps_points(config):
     :param config: a dictionary of configuration options
     :return: a dictionary with an integer key (GPSPoint_ID), and a dictionary for a value.
     The dictionary contains exactly the string keys:
-      'DATE_LOCAL': value is a string in the format YYYY-MM-DD representing a date
+      'DATE_LOCAL': value is a string in the format MM/DD/YYYY representing a date
       'TIME_LOCAL': value is a string in the format HH:MM:SS representing a time
       'LATITUDE_WGS84','LONGITUDE_WGS84': values are doubles
       'UTM8_EASTING','UTM8_NORTHING': values are optional doubles
@@ -114,7 +114,7 @@ def get_gps_points(config):
             datetime_utc = datetime.datetime.strptime(row[1], "%Y-%m-%dT%H:%M:%S.%fZ")
             datetime_local = utc_to_local(datetime_utc)
             results[row[0]] = {
-                'DATE_LOCAL': datetime_local.strftime('%Y-%m-%d'),
+                'DATE_LOCAL': datetime_local.strftime('%m/%d/%Y'),
                 'TIME_LOCAL': datetime_local.strftime('%H:%M:%S'),
                 'LATITUDE_WGS84': row[2],
                 'LONGITUDE_WGS84': row[3],
@@ -191,7 +191,7 @@ def get_observations(config):
     :param config: a dictionary of configuration options
     :return: a dictionary with an integer key (GPSPoint_ID), and a dictionary for a value.
     The dictionary contains exactly the following string keys:
-        'ANGLE','DISTANCE': values are floating point numbers
+        'ANGLE','DISTANCE': values are integers
     """
 
     results = {}
@@ -299,8 +299,8 @@ def create_csv(config):
             ]
             if gps_point_id in observations:
                 observation = observations[gps_point_id]
-                row[16] = observation[fields[16]]
-                row[17] = observation[fields[17]]
+                row[16] = "{0:.0f}".format(observation[fields[16]])
+                row[17] = "{0:.0f}".format(observation[fields[17]])
                 groups = bird_groups[gps_point_id]
                 if len(groups) == 0:
                     arcpy.AddWarning("No Bird Groups for Observation at GPS Point {0}".format(gps_point_id))
