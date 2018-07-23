@@ -167,7 +167,7 @@ def get_track_logs(config):
                 'OBSERVER_2': row[5].upper(),
                 'BEAUFORT': row[6],
                 'WEATHER_CODE': row[7],
-                'VISIBILITY': row[8],
+                'VISIBILITY': 3 - row[8],
                 'ON_TRANSECT': 'TRUE' if observing == 'YES' else 'FALSE',
                 'TRACK_LENGTH': length
             }
