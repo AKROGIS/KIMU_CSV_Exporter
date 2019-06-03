@@ -9,12 +9,12 @@ import arcpy
 default_config = {
     'gdb': '',
     'csv': '',
-    'protocol': 'KM-2012.1',
+    'protocol': 'KM-2019.1',
     'header': 'TRANSECT_ID,DATE_LOCAL,TIME_LOCAL,VESSEL,RECORDER,OBSERVER_1,OBSERVER_2,' +
               'BEAUFORT,WEATHER_CODE,VISIBILITY,LATITUDE_WGS84,LONGITUDE_WGS84,' +
               'UTM8_EASTING,UTM8_NORTHING,SPEED,BEARING,ANGLE,DISTANCE,BEHAVIOR,' +
               'GROUP_SIZE,SPECIES,ON_TRANSECT,PROTOCOL_ID,GPS_STATUS,SATELLITES,' +
-              'HDOP,TRACK_LENGTH,COMMENTS,DATA_QUALITY,DATA_QUALITY_COMMENT'
+              'HDOP,TRACK_LENGTH,COMMENTS,DATA_QUALITY,DATA_QUALITY_COMMENT,OBSERVED_BY'
 }
 
 
@@ -221,7 +221,7 @@ def get_bird_groups(config):
 
     results = {}
     fc = os.path.join(config['gdb'], 'BirdGroups')
-    fields = ['GpsPoint_ID', 'countKitlitz', 'countMarbled', 'countUnknown', 'countPending']
+    fields = ['GpsPoint_ID', 'countKitlitz', 'countMarbled', 'countUnknown', 'countPending', 'observedby']
     with arcpy.da.SearchCursor(fc, fields) as cursor:
         for row in cursor:
             groups = []
@@ -249,7 +249,8 @@ def get_bird_groups(config):
                 group['SPECIES'] = 'P'
                 group['GROUP_SIZE'] = row[4]
                 groups.append(group)
-            results[row[0]] = groups
+            observer = row[5] if 1 <= row[5] and row[5] <=2 else None
+            results[row[0]] = (groups, observer)
     return results
 
 
@@ -295,18 +296,20 @@ def create_csv(config):
                 "{0:.1f}".format(track_log[fields[26]]),
                 None,
                 None,
+                None,
                 None
             ]
             if gps_point_id in observations:
                 observation = observations[gps_point_id]
                 row[16] = "{0:.0f}".format(observation[fields[16]])
                 row[17] = "{0:.0f}".format(observation[fields[17]])
-                groups = bird_groups[gps_point_id]
+                groups,observer = bird_groups[gps_point_id]
+                row[30] = None if observer is None else track_log[fields[4+observer]]  # Observer#1 or Observer#2
                 if len(groups) == 0:
                     arcpy.AddWarning("No Bird Groups for Observation at GPS Point {0}".format(gps_point_id))
                     csv_writer.writerow(row)
                 else:
-                    for bird_group in bird_groups[gps_point_id]:
+                    for bird_group in groups:
                         row[18] = bird_group[fields[18]]
                         row[19] = bird_group[fields[19]]
                         row[20] = bird_group[fields[20]]
