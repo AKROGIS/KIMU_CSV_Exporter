@@ -8,8 +8,9 @@ specific protocol required by Survey Protocol.
 
 This tool is specifc to The output protocol format specified in
 the `default_config` portion at the start of the code, as well as
-the Park Observer Survey Protocol File (scattered through out the
-code).
+the Park Observer Survey Protocol file (scattered through out the
+code). This includes the mis-spelling of KitlitzCount (See
+https://github.com/AKROGIS/Park-Observer-Website/blob/master/protocols/sean_kimu.obsprot)
 
 Written for Python 2.7; should work with Python 3.x.
 Requires the Esri ArcGIS arcpy module.
