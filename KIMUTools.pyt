@@ -341,6 +341,7 @@ def write_csv_row(writer, row):
 def create_csv(config):
     """Build the CSV file in accordance with the config object."""
 
+    # pylint: disable=too-many-locals
     fields = config["header"].split(",")
     gps_points = get_gps_points(config)
     track_logs = get_track_logs(config)
