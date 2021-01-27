@@ -27,20 +27,20 @@ import arcpy
 
 
 default_config = {
-    'gdb': '',
-    'csv': '',
-    'protocol': 'KM-2019.1',
-    'header': 'TRANSECT_ID,DATE_LOCAL,TIME_LOCAL,VESSEL,RECORDER,OBSERVER_1,OBSERVER_2,' +
-              'BEAUFORT,WEATHER_CODE,VISIBILITY,LATITUDE_WGS84,LONGITUDE_WGS84,' +
-              'UTM8_EASTING,UTM8_NORTHING,SPEED,BEARING,ANGLE,DISTANCE,BEHAVIOR,' +
-              'GROUP_SIZE,SPECIES,ON_TRANSECT,PROTOCOL_ID,GPS_STATUS,SATELLITES,' +
-              'HDOP,TRACK_LENGTH,COMMENTS,DATA_QUALITY,DATA_QUALITY_COMMENT,OBSERVED_BY'
+    "gdb": "",
+    "csv": "",
+    "protocol": "KM-2019.1",
+    "header": "TRANSECT_ID,DATE_LOCAL,TIME_LOCAL,VESSEL,RECORDER,OBSERVER_1,OBSERVER_2,"
+    + "BEAUFORT,WEATHER_CODE,VISIBILITY,LATITUDE_WGS84,LONGITUDE_WGS84,"
+    + "UTM8_EASTING,UTM8_NORTHING,SPEED,BEARING,ANGLE,DISTANCE,BEHAVIOR,"
+    + "GROUP_SIZE,SPECIES,ON_TRANSECT,PROTOCOL_ID,GPS_STATUS,SATELLITES,"
+    + "HDOP,TRACK_LENGTH,COMMENTS,DATA_QUALITY,DATA_QUALITY_COMMENT,OBSERVED_BY",
 }
 
 
 class Toolbox(object):
-    """Define the toolbox (the name of the toolbox is the name of the
-        .pyt file)."""
+    """Define the toolbox (the name of the toolbox is the name of the .pyt file)."""
+
     def __init__(self):
         self.label = "KIMU Toolbox"
         self.alias = "KIMU"
@@ -52,8 +52,10 @@ class Toolbox(object):
 class ExportCSV(object):
     def __init__(self):
         self.label = "FGDB to CSV"
-        self.description = ("Creates CSV file having mm/dd/yyyy dates compliant with KIMU Protocol version {} "
-                            "from a Park Observer Survey FGDB.".format(default_config['protocol']))
+        self.description = (
+            "Creates CSV file having mm/dd/yyyy dates compliant with KIMU Protocol version {} "
+            "from a Park Observer Survey FGDB.".format(default_config["protocol"])
+        )
 
     def getParameterInfo(self):
         fgdb = arcpy.Parameter(
@@ -61,20 +63,23 @@ class ExportCSV(object):
             displayName="Survey FGDB",
             direction="Input",
             datatype="DEWorkspace",
-            parameterType="Required")
+            parameterType="Required",
+        )
         fgdb.filter.list = ["poz"]
         csv_folder = arcpy.Parameter(
             name="csv_folder",
             displayName="Output Folder",
             direction="Input",
             datatype="DEFolder",
-            parameterType="Required")
+            parameterType="Required",
+        )
         csv_file = arcpy.Parameter(
             name="csv_file",
             displayName="CSV Filename",
             direction="Input",
             datatype="String",
-            parameterType="Required")
+            parameterType="Required",
+        )
 
         parameters = [fgdb, csv_folder, csv_file]
         return parameters
@@ -87,8 +92,10 @@ class ExportCSV(object):
 
     def execute(self, parameters, messages):
         config = dict(default_config)
-        config['gdb'] = parameters[0].valueAsText
-        config['csv'] = os.path.join(parameters[1].valueAsText, parameters[2].valueAsText)
+        config["gdb"] = parameters[0].valueAsText
+        config["csv"] = os.path.join(
+            parameters[1].valueAsText, parameters[2].valueAsText
+        )
         create_csv(config)
 
 
@@ -126,26 +133,36 @@ def get_gps_points(config):
     """
 
     results = {}
-    fc = os.path.join(config['gdb'], 'GpsPoints')
+    fc = os.path.join(config["gdb"], "GpsPoints")
     sr = arcpy.SpatialReference(3715)  # NAD83(NSRS2007) / UTM zone 8N
-    fields = ['OID@', 'Timestamp', 'Latitude', 'Longitude', 'Shape@X', 'Shape@Y', 'Speed_mps', 'Course', 'TrackLog_ID']
+    fields = [
+        "OID@",
+        "Timestamp",
+        "Latitude",
+        "Longitude",
+        "Shape@X",
+        "Shape@Y",
+        "Speed_mps",
+        "Course",
+        "TrackLog_ID",
+    ]
     with arcpy.da.SearchCursor(fc, fields, None, sr) as cursor:
         for row in cursor:
             datetime_utc = datetime.datetime.strptime(row[1], "%Y-%m-%dT%H:%M:%S.%fZ")
             datetime_local = utc_to_local(datetime_utc)
             results[row[0]] = {
-                'DATE_LOCAL': datetime_local.strftime('%m/%d/%Y'),
-                'TIME_LOCAL': datetime_local.strftime('%H:%M:%S'),
-                'LATITUDE_WGS84': row[2],
-                'LONGITUDE_WGS84': row[3],
-                'UTM8_EASTING':  row[4],
-                'UTM8_NORTHING':  row[5],
-                'SPEED': row[6]*3.6 if 0 <= row[6] else None,
-                'BEARING': row[7] if 0 <= row[7] else None,
-                'GPS_STATUS': None,
-                'SATELLITES': None,
-                'HDOP': None,
-                'TRACKLOG_ID': row[8]
+                "DATE_LOCAL": datetime_local.strftime("%m/%d/%Y"),
+                "TIME_LOCAL": datetime_local.strftime("%H:%M:%S"),
+                "LATITUDE_WGS84": row[2],
+                "LONGITUDE_WGS84": row[3],
+                "UTM8_EASTING": row[4],
+                "UTM8_NORTHING": row[5],
+                "SPEED": row[6] * 3.6 if 0 <= row[6] else None,
+                "BEARING": row[7] if 0 <= row[7] else None,
+                "GPS_STATUS": None,
+                "SATELLITES": None,
+                "HDOP": None,
+                "TRACKLOG_ID": row[8],
             }
     return results
 
@@ -165,41 +182,52 @@ def get_track_logs(config):
 
     results = {}
     total_length = {}
-    fc = os.path.join(config['gdb'], 'TrackLogs')
-    fields = ['OID@', 'Transect', 'Vessel', 'Recorder', 'Observer1', 'Observer2',
-              'Beaufort', 'Weather', 'Visibility', 'Observing', 'Length_m']
+    fc = os.path.join(config["gdb"], "TrackLogs")
+    fields = [
+        "OID@",
+        "Transect",
+        "Vessel",
+        "Recorder",
+        "Observer1",
+        "Observer2",
+        "Beaufort",
+        "Weather",
+        "Visibility",
+        "Observing",
+        "Length_m",
+    ]
     with arcpy.da.SearchCursor(fc, fields) as cursor:
         for row in cursor:
             # create a total length for all on_transect segments of each transect.
             transect = row[1].upper()
             observing = row[9].upper()
             length = row[10]
-            if observing == 'YES':
+            if observing == "YES":
                 if transect not in total_length:
                     total_length[transect] = 0
                 total_length[transect] += length
 
             results[row[0]] = {
-                'TRANSECT_ID': transect,
-                'VESSEL': row[2].upper(),
-                'RECORDER': row[3].upper(),
-                'OBSERVER_1': row[4].upper(),
-                'OBSERVER_2': row[5].upper(),
-                'BEAUFORT': row[6],
-                'WEATHER_CODE': row[7],
-                'VISIBILITY': 3 - row[8],
-                'ON_TRANSECT': 'TRUE' if observing == 'YES' else 'FALSE',
-                'TRACK_LENGTH': length
+                "TRANSECT_ID": transect,
+                "VESSEL": row[2].upper(),
+                "RECORDER": row[3].upper(),
+                "OBSERVER_1": row[4].upper(),
+                "OBSERVER_2": row[5].upper(),
+                "BEAUFORT": row[6],
+                "WEATHER_CODE": row[7],
+                "VISIBILITY": 3 - row[8],
+                "ON_TRANSECT": "TRUE" if observing == "YES" else "FALSE",
+                "TRACK_LENGTH": length,
             }
     # apply the total length to all track logs on a transect.
     for key in results:
-        transect = results[key]['TRANSECT_ID']
+        transect = results[key]["TRANSECT_ID"]
         track_length = 0
         try:
             track_length = total_length[transect]
         except KeyError:
             arcpy.AddWarning("Transect '{0}' has no total length".format(transect))
-        results[key]['TRACK_LENGTH'] = track_length
+        results[key]["TRACK_LENGTH"] = track_length
 
     return results
 
@@ -215,14 +243,11 @@ def get_observations(config):
     """
 
     results = {}
-    fc = os.path.join(config['gdb'], 'Observations')
-    fields = ['GpsPoint_ID', 'Angle', 'Distance']
+    fc = os.path.join(config["gdb"], "Observations")
+    fields = ["GpsPoint_ID", "Angle", "Distance"]
     with arcpy.da.SearchCursor(fc, fields) as cursor:
         for row in cursor:
-            results[row[0]] = {
-                'ANGLE': row[1],
-                'DISTANCE': row[2]
-            }
+            results[row[0]] = {"ANGLE": row[1], "DISTANCE": row[2]}
     return results
 
 
@@ -240,52 +265,58 @@ def get_bird_groups(config):
     """
 
     results = {}
-    fc = os.path.join(config['gdb'], 'BirdGroups')
-    fields = ['GpsPoint_ID', 'countKitlitz', 'countMarbled', 'countUnknown', 'countPending', 'observedby']
+    fc = os.path.join(config["gdb"], "BirdGroups")
+    fields = [
+        "GpsPoint_ID",
+        "countKitlitz",
+        "countMarbled",
+        "countUnknown",
+        "countPending",
+        "observedby",
+    ]
     with arcpy.da.SearchCursor(fc, fields) as cursor:
         for row in cursor:
             groups = []
-            template = {
-                'BEHAVIOR': 'W',
-                'COMMENTS': None
-            }
+            template = {"BEHAVIOR": "W", "COMMENTS": None}
             if 0 < row[1]:
                 group = dict(template)
-                group['SPECIES'] = 'K'
-                group['GROUP_SIZE'] = row[1]
+                group["SPECIES"] = "K"
+                group["GROUP_SIZE"] = row[1]
                 groups.append(group)
             if 0 < row[2]:
                 group = dict(template)
-                group['SPECIES'] = 'M'
-                group['GROUP_SIZE'] = row[2]
+                group["SPECIES"] = "M"
+                group["GROUP_SIZE"] = row[2]
                 groups.append(group)
             if 0 < row[3]:
                 group = dict(template)
-                group['SPECIES'] = 'U'
-                group['GROUP_SIZE'] = row[3]
+                group["SPECIES"] = "U"
+                group["GROUP_SIZE"] = row[3]
                 groups.append(group)
             if 0 < row[4]:
                 group = dict(template)
-                group['SPECIES'] = 'P'
-                group['GROUP_SIZE'] = row[4]
+                group["SPECIES"] = "P"
+                group["GROUP_SIZE"] = row[4]
                 groups.append(group)
-            observer = row[5] if 1 <= row[5] and row[5] <=2 else None
+            observer = row[5] if 1 <= row[5] and row[5] <= 2 else None
             results[row[0]] = (groups, observer)
     return results
 
 
 def create_csv(config):
-    fields = config['header'].split(',')
+    fields = config["header"].split(",")
     gps_points = get_gps_points(config)
     track_logs = get_track_logs(config)
     observations = get_observations(config)
     bird_groups = get_bird_groups(config)
-    with open(config['csv'], 'wb') as csv_file:
-        csv_writer = csv.writer(csv_file,)
+    with open(config["csv"], "wb") as csv_file:
+        csv_writer = csv.writer(
+            csv_file,
+        )
         csv_writer.writerow(fields)
         for gps_point_id in gps_points:
             gps_point = gps_points[gps_point_id]
-            track_log = track_logs[gps_point['TRACKLOG_ID']]
+            track_log = track_logs[gps_point["TRACKLOG_ID"]]
             row = [
                 track_log[fields[0]],
                 gps_point[fields[1]],
@@ -301,15 +332,19 @@ def create_csv(config):
                 "{0:.6f}".format(gps_point[fields[11]]),
                 "{0:.2f}".format(gps_point[fields[12]]),
                 "{0:.2f}".format(gps_point[fields[13]]),
-                "{0:.2f}".format(gps_point[fields[14]]) if gps_point[fields[14]] is not None else None,
-                "{0:.1f}".format(gps_point[fields[15]]) if gps_point[fields[15]] is not None else None,
+                "{0:.2f}".format(gps_point[fields[14]])
+                if gps_point[fields[14]] is not None
+                else None,
+                "{0:.1f}".format(gps_point[fields[15]])
+                if gps_point[fields[15]] is not None
+                else None,
                 None,
                 None,
                 None,
                 None,
                 None,
                 track_log[fields[21]],
-                config['protocol'],
+                config["protocol"],
                 gps_point[fields[23]],
                 gps_point[fields[24]],
                 gps_point[fields[25]],
@@ -317,16 +352,22 @@ def create_csv(config):
                 None,
                 None,
                 None,
-                None
+                None,
             ]
             if gps_point_id in observations:
                 observation = observations[gps_point_id]
                 row[16] = "{0:.0f}".format(observation[fields[16]])
                 row[17] = "{0:.0f}".format(observation[fields[17]])
-                groups,observer = bird_groups[gps_point_id]
-                row[30] = None if observer is None else track_log[fields[4+observer]]  # Observer#1 or Observer#2
+                groups, observer = bird_groups[gps_point_id]
+                row[30] = (
+                    None if observer is None else track_log[fields[4 + observer]]
+                )  # Observer#1 or Observer#2
                 if len(groups) == 0:
-                    arcpy.AddWarning("No Bird Groups for Observation at GPS Point {0}".format(gps_point_id))
+                    arcpy.AddWarning(
+                        "No Bird Groups for Observation at GPS Point {0}".format(
+                            gps_point_id
+                        )
+                    )
                     csv_writer.writerow(row)
                 else:
                     for bird_group in groups:
@@ -341,16 +382,16 @@ def create_csv(config):
 
 def test():
     config = dict(default_config)
-    config['gdb'] = r'C:\tmp\bill\kimu_E\SEAN_KIMU_Protocol_v2.gdb'
-    config['csv'] = r'c:\tmp\bill\kimu_E\results.csv'
+    config["gdb"] = r"C:\tmp\bill\kimu_E\SEAN_KIMU_Protocol_v2.gdb"
+    config["csv"] = r"c:\tmp\bill\kimu_E\results.csv"
     create_csv(config)
 
 
 def main():
     if len(sys.argv) == 3:
         config = dict(default_config)
-        config['gdb'] = sys.argv[1]
-        config['csv'] = sys.argv[2]
+        config["gdb"] = sys.argv[1]
+        config["csv"] = sys.argv[2]
         create_csv(config)
     else:
         print("USAGE: {} /path/to/data.gdb /path/to/output.csv".format(sys.argv[0]))
