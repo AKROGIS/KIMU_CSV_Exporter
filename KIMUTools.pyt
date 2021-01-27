@@ -1,8 +1,28 @@
-import sys
-import os
-import datetime
+"""
+ArcGIS Python Toolbox with geoprocessing tools for KIMU project.
+
+Primary tool converts the file geodatabase from the Park Observer
+survey archive for the Kittlitz's Murrelet (KIMU) survey in Glacier
+Bay done by the South East Alaska I&M Network into a CSV in a
+specific protocol required by Survey Protocol.
+
+This tool is specifc to The output protocol format specified in
+the `default_config` portion at the start of the code, as well as
+the Park Observer Survey Protocol File (scattered through out the
+code).
+
+Written for Python 2.7; should work with Python 3.x.
+Requires the Esri ArcGIS arcpy module.
+"""
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import calendar
 import csv
+import datetime
+import os
+import sys
+
 import arcpy
 
 
@@ -333,7 +353,7 @@ def main():
         config['csv'] = sys.argv[2]
         create_csv(config)
     else:
-        print "USAGE: {} /path/to/data.gdb /path/to/output.csv".format(sys.argv[0])
+        print("USAGE: {} /path/to/data.gdb /path/to/output.csv".format(sys.argv[0]))
 
 
 """
