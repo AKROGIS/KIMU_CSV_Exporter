@@ -303,17 +303,36 @@ def get_bird_groups(config):
     return results
 
 
+def open_csv_write(filename):
+    """Open file in Python 2/3 compatible way for CSV writing"""
+    if sys.version_info[0] < 3:
+        return open(filename, "wb")
+    else:
+        return open(filename, "w", encoding="utf8", newline="")
+
+
+def write_csv_row(writer, row):
+    """writer is a csv.writer, and row is a list of unicode or number objects."""
+    if sys.version_info[0] < 3:
+        writer.writerow(
+            [
+                item.encode("utf-8") if isinstance(item, unicode) else item
+                for item in row
+            ]
+        )
+    else:
+        writer.writerow(row)
+
+
 def create_csv(config):
     fields = config["header"].split(",")
     gps_points = get_gps_points(config)
     track_logs = get_track_logs(config)
     observations = get_observations(config)
     bird_groups = get_bird_groups(config)
-    with open(config["csv"], "wb") as csv_file:
-        csv_writer = csv.writer(
-            csv_file,
-        )
-        csv_writer.writerow(fields)
+    with open_csv_write(config["csv"]) as csv_file:
+        csv_writer = csv.writer(csv_file)
+        write_csv_row(csv_writer, fields)
         for gps_point_id in gps_points:
             gps_point = gps_points[gps_point_id]
             track_log = track_logs[gps_point["TRACKLOG_ID"]]
@@ -368,16 +387,16 @@ def create_csv(config):
                             gps_point_id
                         )
                     )
-                    csv_writer.writerow(row)
+                    write_csv_row(csv_writer, row)
                 else:
                     for bird_group in groups:
                         row[18] = bird_group[fields[18]]
                         row[19] = bird_group[fields[19]]
                         row[20] = bird_group[fields[20]]
                         row[27] = bird_group[fields[27]]
-                        csv_writer.writerow(row)
+                        write_csv_row(csv_writer, row)
             else:
-                csv_writer.writerow(row)
+                write_csv_row(csv_writer, row)
 
 
 def test():
