@@ -6,7 +6,7 @@ survey archive for the Kittlitz's Murrelet (KIMU) survey in Glacier
 Bay done by the South East Alaska I&M Network into a CSV in a
 specific protocol required by Survey Protocol.
 
-This tool is specifc to The output protocol format specified in
+This tool is specific to The output protocol format specified in
 the `default_config` portion at the start of the code, as well as
 the Park Observer Survey Protocol file (scattered through out the
 code). This includes the mis-spelling of KitlitzCount (See
@@ -42,6 +42,9 @@ default_config = {
 class Toolbox(object):
     """Define the toolbox (the name of the toolbox is the name of the .pyt file)."""
 
+    # This class is specified by esri's Toolbox framework
+    # pylint: disable=useless-object-inheritance,too-few-public-methods
+
     def __init__(self):
         self.label = "KIMU Toolbox"
         self.alias = "KIMU"
@@ -51,6 +54,11 @@ class Toolbox(object):
 
 # noinspection PyPep8Naming,PyMethodMayBeStatic,PyUnusedLocal
 class ExportCSV(object):
+    """GP Tool to export the protocol CSV."""
+
+    # A GP Tool class structure is specified by esri's Toolbox framework.
+    # pylint: disable=useless-object-inheritance,invalid-name,no-self-use, unused-argument
+
     def __init__(self):
         self.label = "FGDB to CSV"
         self.description = (
@@ -59,6 +67,7 @@ class ExportCSV(object):
         )
 
     def getParameterInfo(self):
+        """Set up the input form with the parameter list and options."""
         fgdb = arcpy.Parameter(
             name="fgdb",
             displayName="Survey FGDB",
@@ -86,12 +95,15 @@ class ExportCSV(object):
         return parameters
 
     def updateParameters(self, parameters):
-        pass
+        """Update the parameter values after a user's parameter change."""
+        # Nothing to do.
 
     def updateMessages(self, parameters):
-        pass
+        """Update Error,Warning, and Info messages after a user's parameter change."""
+        # Nothing to do.
 
     def execute(self, parameters, messages):
+        """The user has press 'GO', so execute the task."""
         config = dict(default_config)
         config["gdb"] = parameters[0].valueAsText
         config["csv"] = os.path.join(
@@ -134,8 +146,8 @@ def get_gps_points(config):
     """
 
     results = {}
-    fc = os.path.join(config["gdb"], "GpsPoints")
-    sr = arcpy.SpatialReference(3715)  # NAD83(NSRS2007) / UTM zone 8N
+    features = os.path.join(config["gdb"], "GpsPoints")
+    spatial_ref = arcpy.SpatialReference(3715)  # NAD83(NSRS2007) / UTM zone 8N
     fields = [
         "OID@",
         "Timestamp",
@@ -147,7 +159,7 @@ def get_gps_points(config):
         "Course",
         "TrackLog_ID",
     ]
-    with arcpy.da.SearchCursor(fc, fields, None, sr) as cursor:
+    with arcpy.da.SearchCursor(features, fields, None, spatial_ref) as cursor:
         for row in cursor:
             datetime_utc = datetime.datetime.strptime(row[1], "%Y-%m-%dT%H:%M:%S.%fZ")
             datetime_local = utc_to_local(datetime_utc)
@@ -158,8 +170,8 @@ def get_gps_points(config):
                 "LONGITUDE_WGS84": row[3],
                 "UTM8_EASTING": row[4],
                 "UTM8_NORTHING": row[5],
-                "SPEED": row[6] * 3.6 if 0 <= row[6] else None,
-                "BEARING": row[7] if 0 <= row[7] else None,
+                "SPEED": row[6] * 3.6 if row[6] >= 0 else None,
+                "BEARING": row[7] if row[7] >= 0 else None,
                 "GPS_STATUS": None,
                 "SATELLITES": None,
                 "HDOP": None,
@@ -183,7 +195,7 @@ def get_track_logs(config):
 
     results = {}
     total_length = {}
-    fc = os.path.join(config["gdb"], "TrackLogs")
+    features = os.path.join(config["gdb"], "TrackLogs")
     fields = [
         "OID@",
         "Transect",
@@ -197,7 +209,7 @@ def get_track_logs(config):
         "Observing",
         "Length_m",
     ]
-    with arcpy.da.SearchCursor(fc, fields) as cursor:
+    with arcpy.da.SearchCursor(features, fields) as cursor:
         for row in cursor:
             # create a total length for all on_transect segments of each transect.
             transect = row[1].upper()
@@ -244,9 +256,9 @@ def get_observations(config):
     """
 
     results = {}
-    fc = os.path.join(config["gdb"], "Observations")
+    features = os.path.join(config["gdb"], "Observations")
     fields = ["GpsPoint_ID", "Angle", "Distance"]
-    with arcpy.da.SearchCursor(fc, fields) as cursor:
+    with arcpy.da.SearchCursor(features, fields) as cursor:
         for row in cursor:
             results[row[0]] = {"ANGLE": row[1], "DISTANCE": row[2]}
     return results
@@ -266,7 +278,7 @@ def get_bird_groups(config):
     """
 
     results = {}
-    fc = os.path.join(config["gdb"], "BirdGroups")
+    features = os.path.join(config["gdb"], "BirdGroups")
     fields = [
         "GpsPoint_ID",
         "countKitlitz",
@@ -275,31 +287,31 @@ def get_bird_groups(config):
         "countPending",
         "observedby",
     ]
-    with arcpy.da.SearchCursor(fc, fields) as cursor:
+    with arcpy.da.SearchCursor(features, fields) as cursor:
         for row in cursor:
             groups = []
             template = {"BEHAVIOR": "W", "COMMENTS": None}
-            if 0 < row[1]:
+            if row[1] > 0:
                 group = dict(template)
                 group["SPECIES"] = "K"
                 group["GROUP_SIZE"] = row[1]
                 groups.append(group)
-            if 0 < row[2]:
+            if row[2] > 0:
                 group = dict(template)
                 group["SPECIES"] = "M"
                 group["GROUP_SIZE"] = row[2]
                 groups.append(group)
-            if 0 < row[3]:
+            if row[3] > 0:
                 group = dict(template)
                 group["SPECIES"] = "U"
                 group["GROUP_SIZE"] = row[3]
                 groups.append(group)
-            if 0 < row[4]:
+            if row[4] > 0:
                 group = dict(template)
                 group["SPECIES"] = "P"
                 group["GROUP_SIZE"] = row[4]
                 groups.append(group)
-            observer = row[5] if 1 <= row[5] and row[5] <= 2 else None
+            observer = row[5] if row[5] >= 1 and row[5] <= 2 else None
             results[row[0]] = (groups, observer)
     return results
 
@@ -308,13 +320,14 @@ def open_csv_write(filename):
     """Open file in Python 2/3 compatible way for CSV writing"""
     if sys.version_info[0] < 3:
         return open(filename, "wb")
-    else:
-        return open(filename, "w", encoding="utf8", newline="")
+    return open(filename, "w", encoding="utf8", newline="")
 
 
 def write_csv_row(writer, row):
     """writer is a csv.writer, and row is a list of unicode or number objects."""
     if sys.version_info[0] < 3:
+        # when linted for Python 3, it will not understand unicode
+        # pylint: disable=undefined-variable
         writer.writerow(
             [
                 item.encode("utf-8") if isinstance(item, unicode) else item
@@ -326,6 +339,8 @@ def write_csv_row(writer, row):
 
 
 def create_csv(config):
+    """Build the CSV file in accordance with the config object."""
+
     fields = config["header"].split(",")
     gps_points = get_gps_points(config)
     track_logs = get_track_logs(config)
@@ -401,6 +416,7 @@ def create_csv(config):
 
 
 def test():
+    """Static input values for testing."""
     config = dict(default_config)
     config["gdb"] = r"C:\tmp\bill\kimu_E\SEAN_KIMU_Protocol_v2.gdb"
     config["csv"] = r"c:\tmp\bill\kimu_E\results.csv"
@@ -408,6 +424,7 @@ def test():
 
 
 def main():
+    """Command line input values for testing."""
     if len(sys.argv) == 3:
         config = dict(default_config)
         config["gdb"] = sys.argv[1]
@@ -417,12 +434,10 @@ def main():
         print("USAGE: {} /path/to/data.gdb /path/to/output.csv".format(sys.argv[0]))
 
 
-"""
 # Uncomment this section for testing or command line usage
 # Unfortunately ArcGIS loads a toolbox as a file not a module
-if __name__ == '__main__':
-    if len(sys.argv) <= 1:
-        test()
-    else:
-        main()
-"""
+# if __name__ == '__main__':
+#     if len(sys.argv) <= 1:
+#         test()
+#     else:
+#         main()
